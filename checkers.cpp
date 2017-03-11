@@ -3,7 +3,10 @@
 #include <vector>
 using namespace std;
 
-void displayBoard(vector<vector<int>> board){
+//Global 2D Array for board
+int board[8][8];
+
+void displayBoard(){
   for (int i = 7; i >= 0;i--){
       for (int j = 0; j < 8; j++){
         cout << "[" << board[i][j] << "]";
@@ -15,13 +18,8 @@ void displayBoard(vector<vector<int>> board){
     << "d" << "  " << "e" << "  " << "f" << "  " << "g"  << "  "<< "h";
 }
 
-vector<vector<int>> newGame(){
+void newGame(){
   //I is row, J is col
-  vector<vector<int>> board;
-  board.resize(8);
-  for (int i = 0; i < 8; i++){
-    board[i].resize(8);
-  }
 
   for (int i = 0; i < 8;i++){
       for (int j = 0; j < 8; j++){
@@ -61,7 +59,7 @@ vector<vector<int>> newGame(){
 
         //Row 6
         else if ((i+1) == 6){
-          if ((j+1)%2 == 1){
+          if ((j+1)%2 == 0){
             board[i][j] = 2;
           }
           else{
@@ -71,7 +69,7 @@ vector<vector<int>> newGame(){
 
         //Row 7
         else if ((i+1) == 7){
-          if ((j+1)%2 == 0){
+          if ((j+1)%2 == 1){
             board[i][j] = 2;
           }
           else{
@@ -81,7 +79,7 @@ vector<vector<int>> newGame(){
 
         //Row 8
         else if ((i+1) == 8){
-          if ((j+1)%2 == 1){
+          if ((j+1)%2 == 0){
             board[i][j] = 2;
           }
           else{
@@ -95,15 +93,8 @@ vector<vector<int>> newGame(){
         }
       }
     }
-    return board;
 }
-
-bool whosTurn(){
-  return true; //keep true for now
-  //later make true if it's black turn and false if red turn
-}
-
-bool checkWinner(vector<vector<int>> board){
+bool checkWinner(){
   return false;
 }
 
@@ -117,24 +108,65 @@ void checkKing(){
 
 }
 
+bool canCapture(){
+  //Must capture pieces if available
+  
+  //Can Capture for Regular Pieces
+    for (int i = 0; i < 8;i++){
+      for (int j = 0; j < 8; j++){
+        if (i < 6 && i > 1 && board[i][j] == 1){
+          if ((board[i+1][j+1] == 2) && (board[i+2][j+2])){
+            return true;
+          }
+        }
+        else if (board[i][j] == 2){
+          //Check if it can jump over backwards diagonals
+        }
+        else if (board[i][j] == 3){
+          //black king check
+        }
+        else if (board[i][j] == 4){
+          //red king check
+        }
+  
+    return false;
+    }
+  }
+}
+
 //Checks if a move is legal, returns a boolean, called by the makeMove
-bool legalMove(vector<vector<int>> board, int currentX, int currentY, int toX, int toY, bool king){
+bool legalMove(bool blacksTurn, int currentX, int currentY, int toX, int toY, bool king){
   //Legal move conditions, 1 diagonal, jump over piece, jump over multiple pieces - will be hard to implement
 
   //Check if a piece moves single piece diagonally
 
   cout << endl << currentX << currentY << toX << toY << endl;
   //For nonking black pieces - single diagonal move, can only move forward, left/right, piece must be there and destination should be empty
-  if (whosTurn()){
-    if (( (abs(toX - currentX)) == 1) && (toY - currentY == 1) && (board[currentY][currentX] == 1) && (board[toY][toX] == 0) ){
+  if (blacksTurn){
+    if (( (toX - currentX) == 1) && (abs(toY - currentY) == 1) && (board[currentX][currentY] == 1) && (board[toX][toY] == 0) ){
       cout << true;
       return true;
     }
   }
 
   //For nonking red pieces - single diagonal move, can only move forward, left/right, piece must be there and destination should be empty
-  if (!whosTurn()){
-    if (( (abs(toX - currentX)) == 1) && (toY - currentY == -1) && (board[currentY][currentX] == 2) && (board[toY][toX] == 0) ){
+  if (!blacksTurn){
+    if ( (toX - currentX == -1) && (abs(toY - currentY) == 1) && (board[currentX][currentY] == 2) && (board[toX][toY] == 0) ){
+      cout << true;
+      return true;
+    }
+  }
+  
+  //For king black pieces
+  if (blacksTurn){
+    if (( abs(toX - currentX) == 1) && (abs(toY - currentY) == 1) && (board[currentX][currentY] == 1) && (board[toX][toY] == 0) ){
+      cout << true;
+      return true;
+    }
+  }
+  
+  if (!blacksTurn){
+    if (( abs(toX - currentX) == 1) && (abs(toY - currentY) == 1) && (board[currentX][currentY] == 2) && (board[toX][toY] == 0) ){
       cout << true;
       return true;
     }
@@ -150,8 +182,8 @@ bool legalMove(vector<vector<int>> board, int currentX, int currentY, int toX, i
   return false;
 }
 
-vector<vector<int>> updateBoard(vector<vector<int>> board,int currentX,int currentY, int toX, int toY){
-  if (whosTurn()){
+void updateBoard(bool blacksTurn, int currentX,int currentY, int toX, int toY){
+  if (blacksTurn){
     board[currentX][currentY] = 0;
     board[toX][toY] = 1;
   }
@@ -159,44 +191,42 @@ vector<vector<int>> updateBoard(vector<vector<int>> board,int currentX,int curre
     board[currentX][currentY] = 0;
     board[toX][toY] = 2;
   }
-
-
-  return board;
 }
 
-void makeMove(vector<vector<int>> board){
+void makeMove(bool blacksTurn){
   int currentX = 0, currentY = 0, toX = 0, toY = 0;
   string curr = "x", to = "x";
 
+  cout << endl << "Can? " << canCapture();
   do{
     cout << endl << "Which piece would you like to move? ";
     cin >> curr;
     cout << "To where? ";
     cin >> to;
-    int currentX = curr.at(0) - 97; //Converts letter input to an integer number, COLUMN INPUT
-    int currentY = curr.at(1) - '0' - 1; //Converts char number to integer number, ROW INPUT
+    currentY = curr.at(0) - 97; //Converts letter input to an integer number, COLUMN INPUT
+    currentX = curr.at(1) - '0' - 1; //Converts char number to integer number, ROW INPUT
 
-    int toX = to.at(0) - 97;
-    int toY = to.at(1) - '0' - 1;
+    toY = to.at(0) - 97;
+    toX = to.at(1) - '0' - 1;
     cout << currentX << currentY <<toX << toY;
 
-  } while (!legalMove(board,currentX,currentY,toX,toY,false));
+  } while (!legalMove(blacksTurn,currentX,currentY,toX,toY,true));
 
-    updateBoard(board,currentX,currentY,toX,toY);
-  //whosTurn = !whosTurn
+  updateBoard(blacksTurn, currentX,currentY,toX,toY);
 }
 
 int main() {
     int counter = 0;
-    vector<vector<int>> board;
+    int blacksTurn = true;
+    
+    newGame();
+    displayBoard();
 
-    board = newGame();
-    displayBoard(board);
-
-    while(!checkWinner(board)){
-      makeMove(board);
+    while(!checkWinner()){
+      makeMove(blacksTurn);
       cout << endl;
-      displayBoard(board);
+      displayBoard();
+      blacksTurn = !blacksTurn;
 
     }
 
